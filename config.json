@@ -1,0 +1,48 @@
+[
+  {
+	"name": "user",
+	"label": "User",
+	"type": "String",
+	"required": true,
+	"help": "Username for Oracle Server Authentication."
+  },
+  {
+	"name": "password",
+	"label": "Password",
+	"type": "String",
+	"required": true,
+	"help": "Password for Oracle Server Authentication."
+  },
+  {
+	"name": "connection",
+	"label": "Connection String",
+	"type": "String",
+	"required": true,
+	"help": "Connection String for the Oracle Server format - [host]:[port]/[sid or service name]."
+  },
+  {
+	"name": "schema",
+	"label": "User Schema",
+	"type": "String",
+	"required": false,
+	"help": "(Optional) User Schema in the Oracle Database where data will be written into."
+  },
+  {
+	"name": "table",
+	"label": "Table",
+	"type": "String",
+	"required": true,
+	"help": "Table name in the Oracle Database where data will be written into."
+  },
+  {
+	"name": "fields",
+	"label": "Fields",
+	"type": "Object",
+	"required": true,
+	"help": "List of the Table Fields/Columns. Input for this field is in JSON format {\"(field_name)\" : {\"source_field\" : \"value\", \"data_type\": \"value\", \"format\": \"value\"}}. field_name will be the name of the column in the MsSQL Table, source_field (required) value will be the name of the field in the JSON Data passed to the plugin, data_type (optional) there are 5 available data types that will convert data to it's proper type before saving we have String, Integer, Float, Boolean and DateTime leaving this blank will just use the current data for the field, format is only available for Date and Timestamp data_type the script uses TO_DATE and TO_TIMESTAMP to follow the fomat specified. Default formats are yyyy-mm-dd for Date and yyyy-mm-dd hh24:mm:ss.ff for Timestamp"
+  }
+]
+
+
+
+
