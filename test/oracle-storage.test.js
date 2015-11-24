@@ -1,7 +1,3 @@
-/*
- * Just a sample code to test the storage plugin.
- * Kindly write your own unit tests for your own plugin.
- */
 'use strict';
 
 var cp     = require('child_process'),
@@ -10,12 +6,12 @@ var cp     = require('child_process'),
 	moment = require('moment'),
 	storage;
 
-const CONNECTION     = 'reekoh-oracle.cg1corueo9zh.us-east-1.rds.amazonaws.com:1521/ORCL',
-	USER     = 'reekoh',
-	PASSWORD = 'rozzwalla',
-	SCHEMA = 'REEKOH',
-	TABLE    = 'REEKOH_TABLE',
-	_ID      = new Date().getTime();
+const CONNECTION = 'reekoh-oracle.cg1corueo9zh.us-east-1.rds.amazonaws.com:1521/ORCL',
+	  USER       = 'reekoh',
+	  PASSWORD   = 'rozzwalla',
+	  SCHEMA     = 'REEKOH',
+	  TABLE      = 'REEKOH_TABLE',
+	  _ID        = new Date().getTime();
 
 var record = {
 	id: _ID,
@@ -54,26 +50,26 @@ describe('Storage', function () {
 			storage.send({
 				type: 'ready',
 				data: {
-					options :   {
-						connection : CONNECTION,
-						user 	   : USER,
-						password   : PASSWORD,
-						schema     : SCHEMA,
-						table      : TABLE,
-						fields	   : JSON.stringify({
-										id: {source_field: 'id', data_type: 'Integer'},
-										co2_field: {source_field: 'co2', data_type: 'String'},
-										temp_field: {source_field: 'temp', data_type: 'Integer'},
-										quality_field: {source_field: 'quality', data_type: 'Float'},
-										reading_time_field: {
-											source_field: 'reading_time',
-											data_type: 'Timestamp',
-											format: 'yyyy-mm-dd hh24:mi:ss.ff'
-										},
-										metadata_field: {source_field: 'metadata', data_type: 'String'},
-										random_data_field: {source_field: 'random_data'},
-										is_normal_field: {source_field: 'is_normal', data_type: 'Boolean'}
-									})
+					options: {
+						connection: CONNECTION,
+						user: USER,
+						password: PASSWORD,
+						schema: SCHEMA,
+						table: TABLE,
+						fields: JSON.stringify({
+							id: {source_field: 'id', data_type: 'Integer'},
+							co2_field: {source_field: 'co2', data_type: 'String'},
+							temp_field: {source_field: 'temp', data_type: 'Integer'},
+							quality_field: {source_field: 'quality', data_type: 'Float'},
+							reading_time_field: {
+								source_field: 'reading_time',
+								data_type: 'Timestamp',
+								format: 'yyyy-mm-dd hh24:mi:ss.ff'
+							},
+							metadata_field: {source_field: 'metadata', data_type: 'String'},
+							random_data_field: {source_field: 'random_data'},
+							is_normal_field: {source_field: 'is_normal', data_type: 'Boolean'}
+						})
 					}
 				}
 			});
@@ -103,33 +99,28 @@ describe('Storage', function () {
 				connectString: CONNECTION
 			};
 
+			oracledb.getConnection(config, function (err, connection) {
+				connection.execute('SELECT * FROM ' + TABLE + ' WHERE id = ' + _ID, [], {}, function (insErr, result) {
+					should.exist(result.rows[0]);
+					var resp = result.rows[0];
 
-			oracledb.getConnection(config,
-				function(err, connection) {
-					connection.execute('SELECT * FROM ' + TABLE + ' WHERE id = ' + _ID, [], {}, function (insErr, result) {
-						should.exist(result.rows[0]);
-						var resp = result.rows[0];
+					//cleanup for JSON stored string
+					var cleanMetadata = resp.METADATA_FIELD.replace(/\\"/g, '"');
+					var str = JSON.stringify(record.metadata);
+					var str2 = JSON.stringify(cleanMetadata);
 
-						//cleanup for JSON stored string
-						var cleanMetadata = resp.METADATA_FIELD.replace(/\\"/g, '"');
-						var str = JSON.stringify(record.metadata);
-						var str2 = JSON.stringify(cleanMetadata);
+					should.equal(record.co2, resp.CO2_FIELD, 'Data validation failed. Field: co2');
+					should.equal(record.temp, resp.TEMP_FIELD, 'Data validation failed. Field: temp');
+					should.equal(record.quality, resp.QUALITY_FIELD, 'Data validation failed. Field: quality');
+					should.equal(record.random_data, resp.RANDOM_DATA_FIELD, 'Data validation failed. Field: random_data');
+					should.equal(moment(record.reading_time).format('YYYY-MM-DD HH:mm:ss'),
+						moment(resp.READING_TIME_FIELD).format('YYYY-MM-DD HH:mm:ss'),
+						'Data validation failed. Field: reading_time');
+					should.equal(str, str2, 'Data validation failed. Field: metadata');
 
-						should.equal(record.co2, resp.CO2_FIELD, 'Data validation failed. Field: co2');
-						should.equal(record.temp, resp.TEMP_FIELD, 'Data validation failed. Field: temp');
-						should.equal(record.quality, resp.QUALITY_FIELD, 'Data validation failed. Field: quality');
-						should.equal(record.random_data, resp.RANDOM_DATA_FIELD, 'Data validation failed. Field: random_data');
-						should.equal(moment(record.reading_time).format('YYYY-MM-DD HH:mm:ss'),
-							moment(resp.READING_TIME_FIELD).format('YYYY-MM-DD HH:mm:ss'),
-							'Data validation failed. Field: reading_time');
-						should.equal(str, str2, 'Data validation failed. Field: metadata');
-
-						done();
-					});
-				}
-			);
-
-
+					done();
+				});
+			});
 		});
 	});
 });
