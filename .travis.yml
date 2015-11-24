@@ -7,7 +7,7 @@ before_install:
   - sudo apt-get update -y
   - sudo apt-get install build-essential -y
   - sudo apt-get install gcc-4.8 g++-4.8 -y
-  - sudo apt-get install alien -y
+  - sudo apt-get install alien libaio1 libaio-dev -y
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 20
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20
   - sudo update-alternatives --config gcc
