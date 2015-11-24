@@ -12,9 +12,9 @@ before_install:
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20
   - sudo update-alternatives --config gcc
   - sudo update-alternatives --config g++
-  - wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm
-  - wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm
-  - alien -i oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm
-  - alien -i oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm
+  - sudo wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm
+  - sudo wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm
+  - sudo alien -i oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm
+  - sudo alien -i oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm
 notifications:
   slack: reekoh:eFsOWQBeXXs9jKVcqiqo4Ifg
