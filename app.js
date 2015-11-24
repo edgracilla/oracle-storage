@@ -2,85 +2,19 @@
 
 var platform      = require('./platform'),
 	async         = require('async'),
-	oracledb	  = require('oracledb'),
+	oracledb      = require('oracledb'),
 	isPlainObject = require('lodash.isplainobject'),
 	tableName, parseFields, conn;
 
-
 oracledb.autoCommit = true;
-
-/*
- * Listen for the ready event.
- */
-platform.once('ready', function (options) {
-	var isEmpty = require('lodash.isempty');
-	//try catch to capture parsing error in JSON.parse
-	try {
-		parseFields = JSON.parse(options.fields);
-	}
-	catch (ex) {
-		platform.handleException(new Error('Invalid option parameter: fields. Must be a valid JSON String.'));
-
-		return setTimeout(function () {
-			process.exit(1);
-		}, 2000);
-	}
-
-	async.forEachOf(parseFields, function(field, key, callback) {
-		if (isEmpty(field.source_field))
-			callback(new Error('Source field is missing for ' + key + ' Oracle MySQL Plugin'));
-		else if (field.data_type && (field.data_type !== 'String' &&
-			field.data_type !== 'Integer' && field.data_type !== 'Float' &&
-			field.data_type !== 'Boolean' && field.data_type !== 'Timestamp' &&
-			field.data_type !== 'Date')) {
-
-			callback(new Error('Invalid Data Type for ' + key + ' allowed data types are (String, Integer, Float, Boolean, DateTime) in Oracle Plugin'));
-		}
-		else
-			callback();
-	}, function (error) {
-		if (error) {
-			console.error('Error parsing JSON field configuration for Oracle.', error);
-			return platform.handleException(error);
-		}
-
-		tableName = options.table;
-
-		if (options.schema)
-			tableName = options.schema + '.' + tableName;
-
-		var config = {
-			user: options.user,
-			password: options.password,
-			connectString: options.connection
-		};
-
-		oracledb.getConnection(config,
-			function(err, connection) {
-				if (err) {
-					console.error('Error connecting to Oracle.', err);
-					platform.handleException(err);
-				} else {
-					conn = connection;
-					platform.log('Connected to Oracle.');
-					platform.notifyReady(); // Need to notify parent process that initialization of this plugin is done.
-				}
-			}
-		);
-
-	});
-
-});
 
 /*
  * Listen for the data event.
  */
 platform.on('data', function (data) {
-
 	var columnList, valueList, first = true;
 
-	async.forEachOf(parseFields, function(field, key, callback) {
-
+	async.forEachOf(parseFields, function (field, key, callback) {
 		var datum = data[field.source_field],
 			processedDatum;
 
@@ -92,10 +26,10 @@ platform.on('data', function (data) {
 						if (isPlainObject(datum))
 							processedDatum = '\'' + JSON.stringify(datum) + '\'';
 						else
-							processedDatum = '\'' + String(datum) + '\'';
+							processedDatum = '\'' + datum + '\'';
 
 
-					} else if (field.data_type === 'Integer')  {
+					} else if (field.data_type === 'Integer') {
 
 						var intData = parseInt(datum);
 
@@ -104,7 +38,7 @@ platform.on('data', function (data) {
 						else
 							processedDatum = intData;
 
-					} else if (field.data_type === 'Float')  {
+					} else if (field.data_type === 'Float') {
 
 						var floatData = parseFloat(datum);
 
@@ -153,7 +87,6 @@ platform.on('data', function (data) {
 					else
 						processedDatum = '\'' + datum + '\'';
 				}
-
 			} else {
 				if (typeof datum === 'number')
 					processedDatum = datum;
@@ -162,33 +95,28 @@ platform.on('data', function (data) {
 				else
 					processedDatum = '\'' + datum + '\'';
 			}
-
 		} else {
 			processedDatum = null;
 		}
 
 		if (!first) {
-			valueList  = valueList  + ',' + processedDatum;
-			columnList = columnList  + ',' + key;
+			valueList = valueList + ',' + processedDatum;
+			columnList = columnList + ',' + key;
 		} else {
-			first      = false;
-			valueList  = processedDatum;
+			first = false;
+			valueList = processedDatum;
 			columnList = key;
 		}
 		callback();
 	}, function () {
-		conn.execute('insert into ' + tableName + ' (' + columnList +  ') values (' + valueList + ')', function (insErr, result) {
+		conn.execute('insert into ' + tableName + ' (' + columnList + ') values (' + valueList + ')', function (insErr, result) {
 			if (insErr) {
 				console.error('Error committing transaction into Oracle.', insErr);
 				platform.handleException(insErr);
 			}
 		});
 	});
-
-
-
 });
-
 
 /*
  * Event to listen to in order to gracefully release all resources bound to this service.
@@ -209,6 +137,65 @@ platform.on('close', function () {
 			if (error) platform.handleException(error);
 			platform.notifyClose();
 			d.exit();
+		});
+	});
+});
+
+/*
+ * Listen for the ready event.
+ */
+platform.once('ready', function (options) {
+	var isEmpty = require('lodash.isempty');
+	//try catch to capture parsing error in JSON.parse
+	try {
+		parseFields = JSON.parse(options.fields);
+	}
+	catch (ex) {
+		platform.handleException(new Error('Invalid option parameter: fields. Must be a valid JSON String.'));
+
+		return setTimeout(function () {
+			process.exit(1);
+		}, 2000);
+	}
+
+	async.forEachOf(parseFields, function (field, key, callback) {
+		if (isEmpty(field.source_field))
+			callback(new Error('Source field is missing for ' + key + ' Oracle MySQL Plugin'));
+		else if (field.data_type && (field.data_type !== 'String' &&
+			field.data_type !== 'Integer' && field.data_type !== 'Float' &&
+			field.data_type !== 'Boolean' && field.data_type !== 'Timestamp' &&
+			field.data_type !== 'Date')) {
+
+			callback(new Error('Invalid Data Type for ' + key + ' allowed data types are (String, Integer, Float, Boolean, DateTime) in Oracle Plugin'));
+		}
+		else
+			callback();
+	}, function (error) {
+		if (error) {
+			console.error('Error parsing JSON field configuration for Oracle.', error);
+			return platform.handleException(error);
+		}
+
+		tableName = options.table;
+
+		if (options.schema)
+			tableName = options.schema + '.' + tableName;
+
+		var config = {
+			user: options.user,
+			password: options.password,
+			connectString: options.connection
+		};
+
+		oracledb.getConnection(config, function (err, connection) {
+			if (err) {
+				console.error('Error connecting to Oracle.', err);
+				platform.handleException(err);
+			} else {
+				conn = connection;
+				platform.log('Connected to Oracle.');
+				platform.notifyReady(); // Need to notify parent process that initialization of this plugin is done.
+			}
 		});
 	});
 });
