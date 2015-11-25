@@ -37,7 +37,7 @@
   "fields" :
   {
 	"label": "Fields",
-	"type": "Object",
+	"type": "JSON",
 	"required": true,
 	"help": "List of the Table Fields/Columns. Input for this field is in JSON format {\"(field_name)\" : {\"source_field\" : \"value\", \"data_type\": \"value\", \"format\": \"value\"}}. field_name will be the name of the column in the Oracle Table, source_field (required) value will be the name of the field in the JSON Data passed to the plugin, data_type (optional) there are 6 available data types that will convert data to it's proper type before saving we have String, Integer, Float, Boolean, Timestamp and Date leaving this blank will just use the current data for the field, format is only available for Timestamp & Date data_type this will allow users to format the date/time before saving i.e. (yyyy-mm-dd hh24:mi:ss.ff) kindly refer to the moment node module for more details."
   }
