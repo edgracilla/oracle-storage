@@ -1,7 +1,7 @@
 {
   "name": "oracle-storage",
   "description": "Oracle Storage Plugin for Reekoh IoT Platform.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Reekoh, Inc.",
   "main": "app.js",
   "scripts": {
