@@ -167,7 +167,7 @@ platform.on('close', function () {
 	});
 
 	d.run(function () {
-		conn.end(function (error) {
+		pool.terminate(function (error) {
 			if (error) platform.handleException(error);
 			platform.notifyClose();
 			d.exit();
