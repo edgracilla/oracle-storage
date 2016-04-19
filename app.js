@@ -3,6 +3,7 @@
 var knex          = require('knex')({client: 'oracle'}),
 	async         = require('async'),
 	isNil         = require('lodash.isnil'),
+	moment        = require('moment'),
 	isEmpty       = require('lodash.isempty'),
 	isArray       = require('lodash.isarray'),
 	oracledb      = require('oracledb'),
@@ -23,13 +24,15 @@ let insertData = function (data, callback) {
 	else
 		query = knex(tableName).insert(data);
 
+	console.log(query);
 	pool.getConnection((connectionError, connection) => {
 		if (connectionError) console.log('Connection Error', connectionError);
 		if (connectionError) return callback(connectionError);
 
 		connection.execute(query.toString(), data, (insertError) => {
 			if (insertError) console.log('Insert Error', insertError);
-			connection.release();
+			connection.release(function () {
+			});
 
 			if (!insertError) {
 				platform.log(JSON.stringify({
@@ -94,19 +97,13 @@ let processData = function (data, callback) {
 							processedDatum = (datum) ? true : false;
 					}
 				}
-				else if (field.data_type === 'Timestamp') {
-					let format = 'yyyy-mm-dd hh24:mi:ss.ff';
-
-					if (field.format) format = field.format;
-
-					processedDatum = 'TO_TIMESTAMP(\'' + datum + '\', \'' + format + '\' )';
-				}
-				else if (field.data_type === 'Date') {
-					let format = 'yyyy-mm-dd';
-
-					if (field.format) format = field.format;
-
-					processedDatum = 'TO_DATE(\'' + datum + '\', \'' + format + '\' )';
+				else if (field.data_type === 'Date' || field.data_type === 'Timestamp') {
+					if (moment(datum).isValid() && isEmpty(field.format))
+						processedDatum = moment(datum).toDate();
+					else if (moment(datum).isValid() && !isEmpty(field.format))
+						processedDatum = moment(datum).format(field.format);
+					else
+						processedDatum = datum;
 				}
 			}
 			catch (e) {
