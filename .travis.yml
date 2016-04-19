@@ -1,17 +1,10 @@
 language: node_js
 node_js:
-  - "4.3.2"
+  - "4.4.3"
+sudo: required
+dist: trusty
 before_install:
-  - sudo apt-get install python-software-properties -y
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update -y
-  - sudo apt-get install build-essential -y
-  - sudo apt-get install gcc-4.8 g++-4.8 -y
   - sudo apt-get install alien libaio1 libaio-dev -y
-  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 20
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20
-  - sudo update-alternatives --config gcc
-  - sudo update-alternatives --config g++
   - sudo wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm
   - sudo wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm
   - sudo alien -i oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm

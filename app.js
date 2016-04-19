@@ -1,128 +1,151 @@
 'use strict';
 
-var platform      = require('./platform'),
+var knex          = require('knex')({client: 'oracle'}),
 	async         = require('async'),
+	isNil         = require('lodash.isnil'),
+	isEmpty       = require('lodash.isempty'),
+	isArray       = require('lodash.isarray'),
 	oracledb      = require('oracledb'),
+	isNumber      = require('lodash.isnumber'),
+	isString      = require('lodash.isstring'),
+	platform      = require('./platform'),
+	isBoolean     = require('lodash.isboolean'),
 	isPlainObject = require('lodash.isplainobject'),
-	isArray = require('lodash.isarray'),
-	tableName, parseFields, conn;
+	pool, schema, tableName, fieldMapping;
 
 oracledb.autoCommit = true;
 
-let sendData = (data) => {
-	var columnList, valueList, first = true;
+let insertData = function (data, callback) {
+	let query = '';
 
-	async.forEachOf(parseFields, function (field, key, callback) {
-		var datum = data[field.source_field],
+	if (schema)
+		query = knex(tableName).withSchema(schema).insert(data);
+	else
+		query = knex(tableName).insert(data);
+
+	pool.getConnection((connectionError, connection) => {
+		if (connectionError) return callback(connectionError);
+
+		connection.execute(query, data, (insertError) => {
+			connection.release();
+
+			if (!insertError) {
+				platform.log(JSON.stringify({
+					title: 'Record Successfully inserted to Oracle Database.',
+					data: data
+				}));
+			}
+
+			callback(insertError);
+		});
+	});
+};
+
+let processData = function (data, callback) {
+	let processedData = {};
+
+	async.forEachOf(fieldMapping, (field, key, done) => {
+		let datum = data[field.source_field],
 			processedDatum;
 
-		if (datum !== undefined && datum !== null) {
-			if (field.data_type) {
-				try {
-					if (field.data_type === 'String') {
-
-						if (isPlainObject(datum))
-							processedDatum = '\'' + JSON.stringify(datum) + '\'';
-						else
-							processedDatum = '\'' + datum + '\'';
-
-
-					} else if (field.data_type === 'Integer') {
-
-						var intData = parseInt(datum);
+		if (!isNil(datum) && !isEmpty(field.data_type)) {
+			try {
+				if (field.data_type === 'String') {
+					if (isPlainObject(datum))
+						processedDatum = JSON.stringify(datum);
+					else
+						processedDatum = `${datum}`;
+				}
+				else if (field.data_type === 'Integer') {
+					if (isNumber(datum))
+						processedDatum = datum;
+					else {
+						let intData = parseInt(datum);
 
 						if (isNaN(intData))
 							processedDatum = datum; //store original value
 						else
 							processedDatum = intData;
-
-					} else if (field.data_type === 'Float') {
-
-						var floatData = parseFloat(datum);
+					}
+				}
+				else if (field.data_type === 'Float') {
+					if (isNumber(datum))
+						processedDatum = datum;
+					else {
+						let floatData = parseFloat(datum);
 
 						if (isNaN(floatData))
 							processedDatum = datum; //store original value
 						else
 							processedDatum = floatData;
-
-					} else if (field.data_type === 'Boolean') {
-
-						var type = typeof datum;
-
-						if ((type === 'string' && datum.toLocaleLowerCase() === 'true') ||
-							(type === 'boolean' && datum === true )) {
-							processedDatum = 1;
-						} else if ((type === 'string' && datum.toLocaleLowerCase() === 'false') ||
-							(type === 'boolean' && datum === false )) {
-							processedDatum = 0;
-						} else {
-							processedDatum = datum;
-						}
-					} else if (field.data_type === 'Timestamp') {
-
-						var ts_format = 'yyyy-mm-dd hh24:mi:ss.ff';
-
-						if (field.format !== undefined)
-							ts_format = field.format;
-
-						processedDatum = 'TO_TIMESTAMP(\'' + datum + '\', \'' + ts_format + '\' )';
-
-					} else if (field.data_type === 'Date') {
-
-						var dt_format = 'yyyy-mm-dd';
-
-						if (field.format !== undefined)
-							dt_format = field.format;
-
-						processedDatum = 'TO_DATE(\'' + datum + '\', \'' + dt_format + '\' )';
-
 					}
-				} catch (e) {
-					if (typeof datum === 'number')
-						processedDatum = datum;
-					else if (isPlainObject(datum))
-						processedDatum = JSON.stringify(datum);
-					else
-						processedDatum = '\'' + datum + '\'';
 				}
-			} else {
-				if (typeof datum === 'number')
-					processedDatum = datum;
-				else if (isPlainObject(datum))
-					processedDatum = '\'' + JSON.stringify(datum) + '\'';
-				else
-					processedDatum = '\'' + datum + '\'';
-			}
-		} else {
-			processedDatum = null;
-		}
+				else if (field.data_type === 'Boolean') {
+					if (isBoolean(datum))
+						processedDatum = datum;
+					else {
+						if ((isString(datum) && datum.toLowerCase() === 'true') || (isNumber(datum) && datum === 1))
+							processedDatum = true;
+						else if ((isString(datum) && datum.toLowerCase() === 'false') || (isNumber(datum) && datum === 0))
+							processedDatum = false;
+						else
+							processedDatum = (datum) ? true : false;
+					}
+				}
+				else if (field.data_type === 'Timestamp') {
+					let format = 'yyyy-mm-dd hh24:mi:ss.ff';
 
-		if (!first) {
-			valueList = valueList + ',' + processedDatum;
-			columnList = columnList + ',' + key;
-		} else {
-			first = false;
-			valueList = processedDatum;
-			columnList = key;
-		}
-		callback();
-	}, function () {
-		conn.execute('insert into ' + tableName + ' (' + columnList + ') values (' + valueList + ')', function (insErr, result) {
-			if (insErr) {
-				console.error('Error committing transaction into Oracle.', insErr);
-				platform.handleException(insErr);
+					if (field.format) format = field.format;
+
+					processedDatum = 'TO_TIMESTAMP(\'' + datum + '\', \'' + format + '\' )';
+				}
+				else if (field.data_type === 'Date') {
+					let format = 'yyyy-mm-dd';
+
+					if (field.format) format = field.format;
+
+					processedDatum = 'TO_DATE(\'' + datum + '\', \'' + format + '\' )';
+				}
 			}
-		});
+			catch (e) {
+				if (isPlainObject(datum))
+					processedDatum = JSON.stringify(datum);
+				else
+					processedDatum = datum;
+			}
+		}
+		else if (!isNil(datum) && isEmpty(field.data_type)) {
+			if (isPlainObject(datum))
+				processedDatum = JSON.stringify(datum);
+			else
+				processedDatum = `${datum}`;
+		}
+		else
+			processedDatum = null;
+
+		processedData[key] = processedDatum;
+
+		done();
+	}, () => {
+		callback(null, processedData);
 	});
 };
 
 platform.on('data', function (data) {
-	if(isPlainObject(data)){
-		sendData(data);
+	if (isPlainObject(data)) {
+		processData(data, (error, processedData) => {
+			insertData(processedData, (error) => {
+				if (error) platform.handleException(error);
+			});
+		});
 	}
-	else if(isArray(data)){
-		async.each(data, function(datum){
-			sendData(datum);
+	else if (isArray(data)) {
+		async.each(data, function (datum) {
+			processData(datum, (error, processedData) => {
+				insertData(processedData, (error) => {
+					if (error) platform.handleException(error);
+				});
+			});
 		});
 	}
 	else
@@ -156,57 +179,68 @@ platform.on('close', function () {
  * Listen for the ready event.
  */
 platform.once('ready', function (options) {
-	var isEmpty = require('lodash.isempty');
-	//try catch to capture parsing error in JSON.parse
-	try {
-		parseFields = JSON.parse(options.fields);
-	}
-	catch (ex) {
-		platform.handleException(new Error('Invalid option parameter: fields. Must be a valid JSON String.'));
+	schema = options.schema;
+	tableName = options.table;
 
-		return setTimeout(function () {
-			process.exit(1);
-		}, 2000);
-	}
-
-	async.forEachOf(parseFields, function (field, key, callback) {
-		if (isEmpty(field.source_field))
-			callback(new Error('Source field is missing for ' + key + ' Oracle MySQL Plugin'));
-		else if (field.data_type && (field.data_type !== 'String' &&
-			field.data_type !== 'Integer' && field.data_type !== 'Float' &&
-			field.data_type !== 'Boolean' && field.data_type !== 'Timestamp' &&
-			field.data_type !== 'Date')) {
-
-			callback(new Error('Invalid Data Type for ' + key + ' allowed data types are (String, Integer, Float, Boolean, DateTime) in Oracle Plugin'));
+	async.waterfall([
+		async.constant(options.field_mapping),
+		async.asyncify(JSON.parse),
+		(obj, done) => {
+			fieldMapping = obj;
+			done();
 		}
-		else
-			callback();
-	}, function (error) {
-		if (error) {
-			console.error('Error parsing JSON field configuration for Oracle.', error);
-			return platform.handleException(error);
+	], (parseError) => {
+		if (parseError) {
+			platform.handleException(new Error('Invalid field mapping. Must be a valid JSON String.'));
+
+			return setTimeout(function () {
+				process.exit(1);
+			}, 2000);
 		}
 
-		tableName = options.table;
+		let isEmpty = require('lodash.isempty');
 
-		if (options.schema)
-			tableName = options.schema + '.' + tableName;
+		async.forEachOf(fieldMapping, (field, key, done) => {
+			if (isEmpty(field.source_field))
+				done(new Error('Source field is missing for ' + key + ' in field mapping.'));
+			else if (field.data_type && (field.data_type !== 'String' &&
+				field.data_type !== 'Integer' && field.data_type !== 'Float' &&
+				field.data_type !== 'Boolean' && field.data_type !== 'Timestamp' &&
+				field.data_type !== 'Date')) {
 
-		var config = {
-			user: options.user,
-			password: options.password,
-			connectString: options.connection
-		};
-
-		oracledb.getConnection(config, function (err, connection) {
-			if (err) {
-				console.error('Error connecting to Oracle.', err);
-				platform.handleException(err);
-			} else {
-				conn = connection;
-				platform.log('Connected to Oracle.');
-				platform.notifyReady(); // Need to notify parent process that initialization of this plugin is done.
+				done(new Error('Invalid Data Type for ' + key + ' in field mapping. Allowed data types are String, Integer, Float, Boolean, Timestamp and Date.'));
 			}
+			else
+				done();
+		}, (fieldMapError) => {
+			if (fieldMapError) {
+				console.error('Error parsing field mapping.', fieldMapError);
+				platform.handleException(fieldMapError);
+
+				return setTimeout(() => {
+					process.exit(1);
+				}, 2000);
+			}
+
+			oracledb.createPool({
+				user: options.user,
+				password: options.password,
+				connectString: options.connection
+			}, (connectionError, connectionPool) => {
+				if (connectionError) {
+					console.error('Error connecting to Oracle Database Server.', connectionError);
+					platform.handleException(connectionError);
+
+					return setTimeout(() => {
+						process.exit(1);
+					}, 2000);
+				}
+
+				pool = connectionPool;
+
+				platform.log('Connected to Oracle Database Server.');
+				platform.notifyReady();
+			});
 		});
 	});
 });
