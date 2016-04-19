@@ -24,7 +24,7 @@ let insertData = function (data, callback) {
 	else
 		query = knex(tableName).insert(data);
 
-	console.log(query);
+	console.log(query.toString());
 	pool.getConnection((connectionError, connection) => {
 		if (connectionError) console.log('Connection Error', connectionError);
 		if (connectionError) return callback(connectionError);
