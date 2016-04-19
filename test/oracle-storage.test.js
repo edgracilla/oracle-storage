@@ -56,7 +56,7 @@ describe('Storage', function () {
 						password: PASSWORD,
 						schema: SCHEMA,
 						table: TABLE,
-						fields: JSON.stringify({
+						field_mapping: JSON.stringify({
 							id: {source_field: 'id', data_type: 'Integer'},
 							co2_field: {source_field: 'co2', data_type: 'String'},
 							temp_field: {source_field: 'temp', data_type: 'Integer'},
