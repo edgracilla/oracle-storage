@@ -26,7 +26,7 @@ let insertData = function (data, callback) {
 	pool.getConnection((connectionError, connection) => {
 		if (connectionError) return callback(connectionError);
 
-		connection.execute(query, data, (insertError) => {
+		connection.execute(query.toString(), data, (insertError) => {
 			connection.release();
 
 			if (!insertError) {
