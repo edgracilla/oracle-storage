@@ -64,7 +64,7 @@ describe('Storage', function () {
 							reading_time_field: {
 								source_field: 'reading_time',
 								data_type: 'Timestamp',
-								format: 'yyyy-mm-dd hh24:mi:ss.ff'
+								format: 'YYYY-MM-DD HH:mm:ss.SSS'
 							},
 							metadata_field: {source_field: 'metadata', data_type: 'String'},
 							random_data_field: {source_field: 'random_data'},
