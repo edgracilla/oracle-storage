@@ -24,24 +24,20 @@ let insertData = function (data, callback) {
 	else
 		query = knex(tableName).insert(data);
 
-	console.log(query.toString());
 	pool.getConnection((connectionError, connection) => {
-		if (connectionError) console.log('Connection Error', connectionError);
 		if (connectionError) return callback(connectionError);
 
 		connection.execute(query.toString(), data, (insertError) => {
-			if (insertError) console.log('Insert Error', insertError);
 			connection.release(function () {
+				if (!insertError) {
+					platform.log(JSON.stringify({
+						title: 'Record Successfully inserted to Oracle Database.',
+						data: data
+					}));
+				}
+
+				callback(insertError);
 			});
-
-			if (!insertError) {
-				platform.log(JSON.stringify({
-					title: 'Record Successfully inserted to Oracle Database.',
-					data: data
-				}));
-			}
-
-			callback(insertError);
 		});
 	});
 };
