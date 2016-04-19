@@ -183,7 +183,7 @@ platform.once('ready', function (options) {
 	tableName = options.table;
 
 	async.waterfall([
-		async.constant(options.field_mapping),
+		async.constant(options.field_mapping || '{}'),
 		async.asyncify(JSON.parse),
 		(obj, done) => {
 			fieldMapping = obj;
