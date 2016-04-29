@@ -23,6 +23,8 @@ let insertData = function (data, callback) {
 		query = knex(tableName).withSchema(schema).insert(data);
 	else
 		query = knex(tableName).insert(data);
+	console.log('Data', data);
+	console.log('Query', query.toString());
 
 	pool.getConnection((connectionError, connection) => {
 		if (connectionError) return callback(connectionError);
