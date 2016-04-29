@@ -134,7 +134,10 @@ platform.on('data', function (data) {
 	if (isPlainObject(data)) {
 		processData(data, (error, processedData) => {
 			insertData(processedData, (error) => {
-				if (error) platform.handleException(error);
+				if (error) {
+					console.error(error);
+					platform.handleException(error);
+				}
 			});
 		});
 	}
