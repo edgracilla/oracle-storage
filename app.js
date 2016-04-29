@@ -97,9 +97,11 @@ let processData = function (data, callback) {
 					if (moment(datum).isValid() && isEmpty(field.format))
 						processedDatum = moment(datum).toDate();
 					else if (moment(datum).isValid() && !isEmpty(field.format))
-						processedDatum = moment(datum).format(field.format);
+						processedDatum = moment(datum).format(field.format).toDate();
 					else
 						processedDatum = datum;
+
+					console.log(processedDatum);
 				}
 			}
 			catch (e) {

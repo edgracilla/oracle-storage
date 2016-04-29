@@ -1,4 +1,10 @@
 {
+  "connection": {
+	"label": "Connection String",
+	"type": "String",
+	"required": true,
+	"help": "Connection String for the Oracle Server format - [host]:[port]/[sid or service name]."
+  },
   "user": {
 	"label": "User",
 	"type": "String",
@@ -10,12 +16,6 @@
 	"type": "Password",
 	"required": true,
 	"help": "Password for Oracle Server Authentication."
-  },
-  "connection": {
-	"label": "Connection String",
-	"type": "String",
-	"required": true,
-	"help": "Connection String for the Oracle Server format - [host]:[port]/[sid or service name]."
   },
   "schema": {
 	"label": "User Schema",
