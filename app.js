@@ -87,16 +87,12 @@ let processData = function (data, callback) {
 					}
 				}
 				else if (field.data_type === 'Boolean') {
-					if (isBoolean(datum))
-						processedDatum = datum;
-					else {
-						if ((isString(datum) && datum.toLowerCase() === 'true') || (isNumber(datum) && datum === 1))
-							processedDatum = 1;
-						else if ((isString(datum) && datum.toLowerCase() === 'false') || (isNumber(datum) && datum === 0))
-							processedDatum = 0;
-						else
-							processedDatum = (datum) ? 1 : 0;
-					}
+					if ((isString(datum) && datum.toLowerCase() === 'true') || (isNumber(datum) && datum === 1))
+						processedDatum = 1;
+					else if ((isString(datum) && datum.toLowerCase() === 'false') || (isNumber(datum) && datum === 0))
+						processedDatum = 0;
+					else
+						processedDatum = (datum) ? 1 : 0;
 				}
 				else if (field.data_type === 'Date' || field.data_type === 'Timestamp') {
 					if (moment(datum).isValid() && isEmpty(field.format))
