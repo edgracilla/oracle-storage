@@ -13,10 +13,8 @@ var async         = require('async'),
 	isPlainObject = require('lodash.isplainobject'),
 	pool, tableName, fieldMapping;
 
-oracledb.autoCommit = true;
-
 let insertData = function (data, callback) {
-	let query = `insert into ${tableName} (${data.columns.join(',')}) values (${data.values.join(',')})`;
+	let query = `insert into ${tableName} (${data.columns.join(', ')}) values (${data.values.join(', ')})`;
 
 	console.log(query);
 	console.log(data.data);
@@ -24,7 +22,7 @@ let insertData = function (data, callback) {
 	pool.getConnection((connectionError, connection) => {
 		if (connectionError) return callback(connectionError);
 
-		connection.execute(query, data.data, (insertError) => {
+		connection.execute(query, data.data, {autoCommit: true}, (insertError) => {
 			connection.release(function () {
 				if (!insertError) {
 					platform.log(JSON.stringify({
