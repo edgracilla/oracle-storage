@@ -19,14 +19,7 @@ let insertData = function (data, callback) {
 		if (connectionError) return callback(connectionError);
 
 		connection.execute(query, data.data, {autoCommit: true}, (insertError) => {
-			connection.release(function () {
-				if (!insertError) {
-					platform.log(JSON.stringify({
-						title: 'Record Successfully inserted to Oracle Database.',
-						data: data
-					}));
-				}
-
+			connection.release(() => {
 				callback(insertError);
 			});
 		});
@@ -91,10 +84,12 @@ let processData = function (data, callback) {
 						processedDatum = (datum) ? 1 : 0;
 				}
 				else if (field.data_type === 'Date' || field.data_type === 'Timestamp') {
-					if (moment(datum).isValid() && isEmpty(field.format))
+					if (isEmpty(field.format) && moment(datum).isValid())
 						processedDatum = moment(datum).toDate();
-					else if (moment(datum).isValid() && !isEmpty(field.format))
-						processedDatum = moment(datum).format(field.format).toDate();
+					else if (!isEmpty(field.format) && moment(datum, field.format).isValid())
+						processedDatum = moment(datum, field.format).toDate();
+					else if (!isEmpty(field.format) && moment(datum).isValid())
+						processedDatum = moment(datum).toDate();
 					else
 						processedDatum = datum;
 				}
@@ -127,15 +122,29 @@ platform.on('data', function (data) {
 	if (isPlainObject(data)) {
 		processData(data, (error, processedData) => {
 			insertData(processedData, (error) => {
-				if (error) platform.handleException(error);
+				if (!error) {
+					platform.log(JSON.stringify({
+						title: 'Record Successfully inserted to Oracle Database.',
+						data: data
+					}));
+				}
+				else
+					platform.handleException(error);
 			});
 		});
 	}
 	else if (isArray(data)) {
-		async.each(data, function (datum) {
+		async.each(data, (datum) => {
 			processData(datum, (error, processedData) => {
 				insertData(processedData, (error) => {
-					if (error) platform.handleException(error);
+					if (!error) {
+						platform.log(JSON.stringify({
+							title: 'Record Successfully inserted to Oracle Database.',
+							data: datum
+						}));
+					}
+					else
+						platform.handleException(error);
 				});
 			});
 		});
@@ -187,9 +196,9 @@ platform.once('ready', function (options) {
 		if (parseError) {
 			platform.handleException(new Error('Invalid field mapping. Must be a valid JSON String.'));
 
-			return setTimeout(function () {
+			return setTimeout(() => {
 				process.exit(1);
-			}, 2000);
+			}, 5000);
 		}
 
 		let isEmpty = require('lodash.isempty');
@@ -213,7 +222,7 @@ platform.once('ready', function (options) {
 
 				return setTimeout(() => {
 					process.exit(1);
-				}, 2000);
+				}, 5000);
 			}
 
 			oracledb.createPool({
@@ -227,7 +236,7 @@ platform.once('ready', function (options) {
 
 					return setTimeout(() => {
 						process.exit(1);
-					}, 2000);
+					}, 5000);
 				}
 
 				pool = connectionPool;
