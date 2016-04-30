@@ -114,7 +114,6 @@ describe('Storage', function () {
 				connection.execute('SELECT * FROM ' + TABLE + ' WHERE id = ' + _ID, [], {}, function (queryError, result) {
 					should.ifError(queryError);
 
-					console.log('Result', result);
 					should.exist(result.rows[0]);
 					var resp = result.rows[0];
 
