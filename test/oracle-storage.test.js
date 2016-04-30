@@ -18,7 +18,7 @@ var record = {
 	co2: '11%',
 	temp: 23,
 	quality: 11.25,
-	reading_time: '2015-11-27 11:04:13.539',
+	reading_time: (new Date()),
 	metadata: '{"metadata_json": "reekoh metadata json"}',
 	random_data: 'abcdefg',
 	is_normal: true
@@ -63,8 +63,7 @@ describe('Storage', function () {
 							quality_field: {source_field: 'quality', data_type: 'Float'},
 							reading_time_field: {
 								source_field: 'reading_time',
-								data_type: 'Timestamp',
-								format: 'YYYY-MM-DD HH:mm:ss.SS'
+								data_type: 'Timestamp'
 							},
 							metadata_field: {source_field: 'metadata', data_type: 'String'},
 							random_data_field: {source_field: 'random_data'},
