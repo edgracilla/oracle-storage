@@ -1,45 +1,39 @@
 {
-  "user" :
-  {
-	"label": "User",
-	"type": "String",
-	"required": true,
-	"help": "Username for Oracle Server Authentication."
-  },
-  "password" :
-  {
-	"label": "Password",
-	"type": "Password",
-	"required": true,
-	"help": "Password for Oracle Server Authentication."
-  },
-  "connection" :
-  {
+  "connection": {
 	"label": "Connection String",
 	"type": "String",
 	"required": true,
 	"help": "Connection String for the Oracle Server format - [host]:[port]/[sid or service name]."
   },
-  "schema" :
-  {
+  "user": {
+	"label": "User",
+	"type": "String",
+	"required": true,
+	"help": "Username for Oracle Server Authentication."
+  },
+  "password": {
+	"label": "Password",
+	"type": "Password",
+	"required": true,
+	"help": "Password for Oracle Server Authentication."
+  },
+  "schema": {
 	"label": "User Schema",
 	"type": "String",
 	"required": false,
 	"help": "(Optional) User Schema in the Oracle Database where data will be written into."
   },
-  "table" :
-  {
+  "table": {
 	"label": "Table",
 	"type": "String",
 	"required": true,
 	"help": "Table name in the Oracle Database where data will be written into."
   },
-  "fields" :
-  {
-	"label": "Fields",
+  "field_mapping": {
+	"label": "Field Mapping",
 	"type": "JSON",
 	"required": true,
-	"help": "List of the Table Fields/Columns. Input for this field is in JSON format {\"(field_name)\" : {\"source_field\" : \"value\", \"data_type\": \"value\", \"format\": \"value\"}}. field_name will be the name of the column in the Oracle Table, source_field (required) value will be the name of the field in the JSON Data passed to the plugin, data_type (optional) there are 6 available data types that will convert data to it's proper type before saving we have String, Integer, Float, Boolean, Timestamp and Date leaving this blank will just use the current data for the field, format is only available for Timestamp & Date data_type this will allow users to format the date/time before saving i.e. (yyyy-mm-dd hh24:mi:ss.ff) kindly refer to the moment node module for more details."
+	"help": "List of the Table Fields/Columns. Input for this field is in JSON format {\"(field_name)\" : {\"source_field\" : \"value\", \"data_type\": \"value\", \"format\": \"value\"}}. field_name will be the name of the column in the Oracle Table, source_field (required) value will be the name of the field in the JSON Data passed to the plugin, data_type (optional) there are 6 available data types that will convert data to it's proper type before saving we have String, Integer, Float, Boolean, Timestamp and Date, format is only available for Timestamp & Date data_type this will allow users to format the date/time before saving i.e. (yyyy-mm-dd hh24:mi:ss.ff) kindly refer to the MomentJS docs for more details."
   }
 }
 
