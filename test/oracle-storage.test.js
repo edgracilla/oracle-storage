@@ -63,7 +63,7 @@ describe('Storage', function () {
 							CO2_FIELD: {source_field: 'co2', data_type: 'String'},
 							TEMP_FIELD: {source_field: 'temp', data_type: 'Integer'},
 							QUALITY_FIELD: {source_field: 'quality', data_type: 'Float'},
-							reading_time_field: {
+							READING_TIME_FIELD: {
 								source_field: 'reading_time',
 								data_type: 'Timestamp'
 							},
@@ -73,16 +73,26 @@ describe('Storage', function () {
 						})
 					}
 				}
+			}, (error) => {
+				should.ifError(error);
 			});
 		});
 	});
 
 	describe('#data', function () {
 		it('should process the data', function (done) {
+			this.timeout(4000);
+
 			storage.send({
 				type: 'data',
 				data: record
-			}, done);
+			}, (error) => {
+				should.ifError(error);
+
+				setTimeout(() => {
+					done();
+				}, 3000);
+			});
 		});
 	});
 
@@ -101,7 +111,10 @@ describe('Storage', function () {
 			};
 
 			oracledb.getConnection(config, function (err, connection) {
-				connection.execute('SELECT * FROM ' + TABLE + ' WHERE id = ' + _ID, [], {}, function (insErr, result) {
+				connection.execute('SELECT * FROM ' + TABLE + ' WHERE id = ' + _ID, [], {}, function (queryError, result) {
+					should.ifError(queryError);
+
+					console.log('Result', result);
 					should.exist(result.rows[0]);
 					var resp = result.rows[0];
 

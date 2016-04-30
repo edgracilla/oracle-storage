@@ -9,15 +9,11 @@ var async         = require('async'),
 	isNumber      = require('lodash.isnumber'),
 	isString      = require('lodash.isstring'),
 	platform      = require('./platform'),
-	isBoolean     = require('lodash.isboolean'),
 	isPlainObject = require('lodash.isplainobject'),
 	pool, tableName, fieldMapping;
 
 let insertData = function (data, callback) {
 	let query = `insert into ${tableName} (${data.columns.join(', ')}) values (${data.values.join(', ')})`;
-
-	console.log(query);
-	console.log(data.data);
 
 	pool.getConnection((connectionError, connection) => {
 		if (connectionError) return callback(connectionError);
@@ -101,8 +97,6 @@ let processData = function (data, callback) {
 						processedDatum = moment(datum).format(field.format).toDate();
 					else
 						processedDatum = datum;
-
-					console.log(processedDatum);
 				}
 			}
 			catch (e) {
@@ -133,10 +127,7 @@ platform.on('data', function (data) {
 	if (isPlainObject(data)) {
 		processData(data, (error, processedData) => {
 			insertData(processedData, (error) => {
-				if (error) {
-					console.error(error);
-					platform.handleException(error);
-				}
+				if (error) platform.handleException(error);
 			});
 		});
 	}
