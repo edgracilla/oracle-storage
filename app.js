@@ -91,11 +91,11 @@ let processData = function (data, callback) {
 						processedDatum = datum;
 					else {
 						if ((isString(datum) && datum.toLowerCase() === 'true') || (isNumber(datum) && datum === 1))
-							processedDatum = true;
+							processedDatum = 1;
 						else if ((isString(datum) && datum.toLowerCase() === 'false') || (isNumber(datum) && datum === 0))
-							processedDatum = false;
+							processedDatum = 0;
 						else
-							processedDatum = (datum) ? true : false;
+							processedDatum = (datum) ? 1 : 0;
 					}
 				}
 				else if (field.data_type === 'Date' || field.data_type === 'Timestamp') {
