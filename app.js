@@ -1,7 +1,6 @@
 'use strict';
 
-var knex          = require('knex')({client: 'oracle'}),
-	async         = require('async'),
+var async         = require('async'),
 	isNil         = require('lodash.isnil'),
 	moment        = require('moment'),
 	isEmpty       = require('lodash.isempty'),
@@ -12,24 +11,20 @@ var knex          = require('knex')({client: 'oracle'}),
 	platform      = require('./platform'),
 	isBoolean     = require('lodash.isboolean'),
 	isPlainObject = require('lodash.isplainobject'),
-	pool, schema, tableName, fieldMapping;
+	pool, tableName, fieldMapping;
 
 oracledb.autoCommit = true;
 
 let insertData = function (data, callback) {
-	let query = '';
+	let query = `insert into ${tableName} (${data.columns.join(',')}) values (${data.values.join(',')})`;
 
-	if (schema)
-		query = knex(tableName).withSchema(schema).insert(data);
-	else
-		query = knex(tableName).insert(data);
-	console.log('Data', data);
-	console.log('Query', query.toString());
+	console.log(query);
+	console.log(data.data);
 
 	pool.getConnection((connectionError, connection) => {
 		if (connectionError) return callback(connectionError);
 
-		connection.execute(query.toString(), data, (insertError) => {
+		connection.execute(query, data.data, (insertError) => {
 			connection.release(function () {
 				if (!insertError) {
 					platform.log(JSON.stringify({
@@ -45,9 +40,19 @@ let insertData = function (data, callback) {
 };
 
 let processData = function (data, callback) {
-	let processedData = {};
+	let keyCount      = 0,
+		processedData = {
+			columns: [],
+			values: [],
+			data: {}
+		};
 
 	async.forEachOf(fieldMapping, (field, key, done) => {
+		keyCount++;
+
+		processedData.columns.push(`"${key}"`);
+		processedData.values.push(`:val${keyCount}`);
+
 		let datum = data[field.source_field],
 			processedDatum;
 
@@ -122,7 +127,7 @@ let processData = function (data, callback) {
 		else
 			processedDatum = null;
 
-		processedData[key] = processedDatum;
+		processedData.data[`val${keyCount}`] = processedDatum;
 
 		done();
 	}, () => {
@@ -181,8 +186,10 @@ platform.on('close', function () {
  * Listen for the ready event.
  */
 platform.once('ready', function (options) {
-	schema = options.schema;
-	tableName = options.table;
+	if (options.schema)
+		tableName = `"${options.schema}"."${options.table}"`;
+	else
+		tableName = `"${options.table}"`;
 
 	async.waterfall([
 		async.constant(options.field_mapping || '{}'),
