@@ -18,7 +18,7 @@ var record = {
 	co2: '11%',
 	temp: 23,
 	quality: 11.25,
-	reading_time: (new Date()),
+	//reading_time: (new Date()),
 	metadata: '{"metadata_json": "reekoh metadata json"}',
 	random_data: 'abcdefg',
 	is_normal: true
@@ -61,10 +61,10 @@ describe('Storage', function () {
 							co2_field: {source_field: 'co2', data_type: 'String'},
 							temp_field: {source_field: 'temp', data_type: 'Integer'},
 							quality_field: {source_field: 'quality', data_type: 'Float'},
-							reading_time_field: {
+							/*reading_time_field: {
 								source_field: 'reading_time',
 								data_type: 'Timestamp'
-							},
+							},*/
 							metadata_field: {source_field: 'metadata', data_type: 'String'},
 							random_data_field: {source_field: 'random_data'},
 							is_normal_field: {source_field: 'is_normal', data_type: 'Boolean'}
@@ -112,9 +112,9 @@ describe('Storage', function () {
 					should.equal(record.temp, resp.TEMP_FIELD, 'Data validation failed. Field: temp');
 					should.equal(record.quality, resp.QUALITY_FIELD, 'Data validation failed. Field: quality');
 					should.equal(record.random_data, resp.RANDOM_DATA_FIELD, 'Data validation failed. Field: random_data');
-					should.equal(moment(record.reading_time).format('YYYY-MM-DD HH:mm:ss'),
+					/*should.equal(moment(record.reading_time).format('YYYY-MM-DD HH:mm:ss'),
 						moment(resp.READING_TIME_FIELD).format('YYYY-MM-DD HH:mm:ss'),
-						'Data validation failed. Field: reading_time');
+						'Data validation failed. Field: reading_time');*/
 					should.equal(str, str2, 'Data validation failed. Field: metadata');
 
 					done();
