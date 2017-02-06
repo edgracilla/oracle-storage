@@ -92,3 +92,20 @@ metadata_field     |
 reading_time_field |
 random_data_field  |
 is_normal_field    |
+
+## Note on npm install oracledb
+if you receive an 'oci.h' problem follow below instruction.
+
+```javascript
+Open an elevated CMD prompt (run as Administrator).
+navigate to your app folder
+npm install --global npm
+npm install --global --production windows-build-tools
+npm install instantclient
+set PATH=%cd%\instantclient;%USERPROFILE%\.windows-build-tools\python27;%PATH%
+set OCI_LIB_DIR=%cd%\instantclient\sdk\lib\msvc
+set OCI_INC_DIR=%cd%\instantclient\sdk\include
+npm install oracledb
+```
+
+reference: https://github.com/oracle/node-oracledb/issues/483
