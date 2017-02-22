@@ -1,14 +1,13 @@
 'use strict'
 
-const reekoh = require('demo-reekoh-node')
+const reekoh = require('reekoh')
 const _plugin = new reekoh.plugins.Storage()
 
 const async = require('async')
-const isNil = require('lodash.isnil')
 const moment = require('moment')
-const isEmpty = require('lodash.isempty')
-const isArray = Array.isArray
 const oracledb = require('oracledb')
+const isNil = require('lodash.isnil')
+const isEmpty = require('lodash.isempty')
 const isNumber = require('lodash.isnumber')
 const isString = require('lodash.isstring')
 const isPlainObject = require('lodash.isplainobject')
@@ -121,31 +120,31 @@ let processData = (data, callback) => {
 _plugin.on('data', (data) => {
   if (isPlainObject(data)) {
     processData(data, (error, processedData) => {
+      if (error) return _plugin.logException(error)
+
       insertData(processedData, (error) => {
-        if (!error) {
+        if (error) return _plugin.logException(error)
+
+        process.send({ type: 'processed' })
+        _plugin.log(JSON.stringify({
+          title: 'Record Successfully inserted to Oracle Database.',
+          data: data
+        }))
+      })
+    })
+  } else if (Array.isArray(data)) {
+    async.each(data, (datum) => {
+      processData(datum, (error, processedData) => {
+        if (error) return _plugin.logException(error)
+
+        insertData(processedData, (error) => {
+          if (error) return _plugin.logException(error)
+
           process.send({ type: 'processed' })
           _plugin.log(JSON.stringify({
             title: 'Record Successfully inserted to Oracle Database.',
-            data: data
+            data: datum
           }))
-        } else {
-          _plugin.logException(error)
-        }
-      })
-    })
-  } else if (isArray(data)) {
-    async.each(data, (datum) => {
-      processData(datum, (error, processedData) => {
-        insertData(processedData, (error) => {
-          if (!error) {
-            process.send({ type: 'processed' })
-            _plugin.log(JSON.stringify({
-              title: 'Record Successfully inserted to Oracle Database.',
-              data: datum
-            }))
-          } else {
-            _plugin.logException(error)
-          }
         })
       })
     })
@@ -155,33 +154,25 @@ _plugin.on('data', (data) => {
 })
 
 _plugin.once('ready', () => {
-  let options = {
-    connection: process.env.ORACLE_CONNECTION,
-    user: process.env.ORACLE_USER,
-    password: process.env.ORACLE_PASSWORD,
-    schema: process.env.ORACLE_SCHEMA,
-    table: process.env.ORACLE_TABLE,
+  _plugin.config.field_mapping = JSON.stringify({
+    ID: {source_field: 'id', data_type: 'Integer'},
+    CO2_FIELD: {source_field: 'co2', data_type: 'String'},
+    TEMP_FIELD: {source_field: 'temp', data_type: 'Integer'},
+    QUALITY_FIELD: {source_field: 'quality', data_type: 'Float'},
+    READING_TIME_FIELD: {
+      source_field: 'reading_time',
+      data_type: 'Timestamp'
+    },
+    METADATA_FIELD: {source_field: 'metadata', data_type: 'String'},
+    RANDOM_DATA_FIELD: {source_field: 'random_data'},
+    IS_NORMAL_FIELD: {source_field: 'is_normal', data_type: 'Boolean'}
+  })
 
-    field_mapping: JSON.stringify({
-      ID: {source_field: 'id', data_type: 'Integer'},
-      CO2_FIELD: {source_field: 'co2', data_type: 'String'},
-      TEMP_FIELD: {source_field: 'temp', data_type: 'Integer'},
-      QUALITY_FIELD: {source_field: 'quality', data_type: 'Float'},
-      READING_TIME_FIELD: {
-        source_field: 'reading_time',
-        data_type: 'Timestamp'
-      },
-      METADATA_FIELD: {source_field: 'metadata', data_type: 'String'},
-      RANDOM_DATA_FIELD: {source_field: 'random_data'},
-      IS_NORMAL_FIELD: {source_field: 'is_normal', data_type: 'Boolean'}
-    })
-  }
+  let options = _plugin.config
 
-  if (options.schema) {
-    tableName = `"${options.schema}"."${options.table}"`
-  } else {
-    tableName = `"${options.table}"`
-  }
+  tableName = options.schema
+    ? `"${options.schema}"."${options.table}"`
+    : `"${options.table}"`
 
   async.waterfall([
     async.constant(options.field_mapping || '{}'),

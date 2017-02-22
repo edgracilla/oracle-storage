@@ -6,11 +6,22 @@ const should = require('should')
 const moment = require('moment')
 const cp = require('child_process')
 
-let _storage = null
-let _channel = null
-let _conn = null
+const _ID = new Date().getTime()
+const INPUT_PIPE = 'demo.pipe.storage'
+const BROKER = 'amqp://guest:guest@127.0.0.1/'
 
-let _ID = new Date().getTime()
+let conf = {
+  connection: 'reekoh-oracle.cg1corueo9zh.us-east-1.rds.amazonaws.com:1521/ORCL',
+  user: 'reekoh',
+  password: 'rozzwalla',
+  schema: 'REEKOH',
+  table: 'REEKOH_TABLE',
+  fieldMapping: '??'
+}
+
+let _app = null
+let _conn = null
+let _channel = null
 
 let record = {
   id: _ID,
@@ -25,38 +36,30 @@ let record = {
   is_normal: true
 }
 
-describe('Storage', function () {
-  this.slow(5000)
-
+describe('Oracle Storage', function () {
   before('init', () => {
-    process.env.INPUT_PIPE = 'demo.pipe.storage'
-    process.env.BROKER = 'amqp://guest:guest@127.0.0.1/'
+    process.env.BROKER = BROKER
+    process.env.INPUT_PIPE = INPUT_PIPE
+    process.env.CONFIG = JSON.stringify(conf)
 
-    process.env.ORACLE_USER = 'reekoh'
-    process.env.ORACLE_PASSWORD = 'rozzwalla'
-    process.env.ORACLE_SCHEMA = 'REEKOH'
-    process.env.ORACLE_TABLE = 'REEKOH_TABLE'
-    process.env.ORACLE_CONNECTION = 'reekoh-oracle.cg1corueo9zh.us-east-1.rds.amazonaws.com:1521/ORCL'
-
-    amqp.connect(process.env.BROKER)
-      .then((conn) => {
-        _conn = conn
-        return conn.createChannel()
-      }).then((channel) => {
-        _channel = channel
-      }).catch((err) => {
-        console.log(err)
-      })
+    amqp.connect(BROKER).then((conn) => {
+      _conn = conn
+      return conn.createChannel()
+    }).then((channel) => {
+      _channel = channel
+    }).catch((err) => {
+      console.log(err)
+    })
   })
 
   after('terminate child process', function () {
     _conn.close()
-    _storage.kill('SIGKILL')
+    _app.kill('SIGKILL')
   })
 
   describe('#spawn', function () {
     it('should spawn a child process', function () {
-      should.ok(_storage = cp.fork(process.cwd()), 'Child process not spawned.')
+      should.ok(_app = cp.fork(process.cwd()), 'Child process not spawned.')
     })
   })
 
@@ -64,7 +67,7 @@ describe('Storage', function () {
     it('should notify the parent process when ready within 5 seconds', function (done) {
       this.timeout(5000)
 
-      _storage.on('message', function (message) {
+      _app.on('message', function (message) {
         if (message.type === 'ready') {
           done()
         }
@@ -76,12 +79,11 @@ describe('Storage', function () {
     it('should process the data', function (done) {
       this.timeout(8000)
 
-      _channel.sendToQueue(process.env.INPUT_PIPE, new Buffer(JSON.stringify(record)))
+      _channel.sendToQueue(INPUT_PIPE, new Buffer(JSON.stringify(record)))
 
-      _storage.on('message', (msg) => {
+      _app.on('message', (msg) => {
         if (msg.type === 'processed') done()
       })
-
     })
   })
 
@@ -94,14 +96,14 @@ describe('Storage', function () {
       oracledb.outFormat = oracledb.OBJECT
 
       let config = {
-        user: process.env.ORACLE_USER,
-        password: process.env.ORACLE_PASSWORD,
-        connectString: process.env.ORACLE_CONNECTION
+        user: conf.user,
+        password: conf.password,
+        connectString: conf.connection
       }
 
       oracledb.getConnection(config, function (err, connection) {
         if (err) return console.log(err)
-        connection.execute('SELECT * FROM ' + process.env.ORACLE_TABLE + ' WHERE id = ' + _ID, [], {}, function (queryError, result) {
+        connection.execute('SELECT * FROM ' + conf.table + ' WHERE id = ' + _ID, [], {}, function (queryError, result) {
           should.ifError(queryError)
 
           should.exist(result.rows[0])

@@ -1,19 +1,18 @@
 {
   "name": "oracle-storage",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "description": "Oracle Storage Plugin for Reekoh IoT Platform",
   "author": "Reekoh, Inc.",
-  "license": "LGPL-3.0",
+  "license": "GPL-3.0",
   "main": "app.js",
   "scripts": {
-    "test": "gulp test"
+    "test": "gulp lint"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/Reekoh/mongodb-storage"
   },
   "dependencies": {
-    "demo-reekoh-node": "^1.0.0",
     "lodash.foreach": "^4.2.0",
     "lodash.isboolean": "^3.0.3",
     "lodash.isempty": "^4.2.1",
@@ -22,7 +21,8 @@
     "lodash.isplainobject": "^4.0.4",
     "lodash.isstring": "^4.0.1",
     "moment": "^2.13.0",
-    "oracledb": "^1.8.0"
+    "oracledb": "^1.8.0",
+    "reekoh": "^1.0.0"
   },
   "devDependencies": {
     "amqplib": "^0.5.1",
@@ -32,6 +32,7 @@
     "gulp-json-lint": "^0.1.0",
     "gulp-mocha": "^2.2.0",
     "gulp-plumber": "^1.1.0",
+    "gulp-standard": "^8.0.4",
     "jshint": "^2.9.4",
     "mocha": "^2.5.3",
     "should": "^9.0.2"
