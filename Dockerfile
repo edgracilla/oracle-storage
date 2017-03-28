@@ -1,26 +1,21 @@
-FROM node
+FROM node:boron
 
 MAINTAINER Reekoh
 
-WORKDIR /home
+RUN apt-get update && apt-get install -y build-essential \
+	apt-get install alien libaio1 libaio-dev -y \
+	wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm \
+	wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm \
+  alien -i oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm \
+  alien -i oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm
 
-# copy files
-ADD . /home
+RUN mkdir -p /home/node/oracle-storage
+COPY . /home/node/oracle-storage
 
-# Update the repository sources list once more
-RUN sudo apt-get update && apt-get install -y alien libaio1 libaio-dev && \
-    wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm && \
-    wget "https://s3.amazonaws.com/reekoh-rpms/oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm" -O oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm && \
-    alien -i oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm && \
-    alien -i oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm
+WORKDIR /home/node/oracle-storage
 
-RUN npm install
+# Install dependencies
+RUN npm install pm2 yarn -g
+RUN yarn install
 
-# setting need environment variables
-ENV INPUT_PIPE="demo.storage" \
-    CONFIG="{}" \
-    LOGGERS="" \
-    EXCEPTION_LOGGERS="" \
-    BROKER="amqp://guest:guest@172.17.0.2/"
-
-CMD ["node", "app"]
+CMD ["pm2-docker", "--json", "app.yml"]

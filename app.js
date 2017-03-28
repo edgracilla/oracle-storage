@@ -1,7 +1,7 @@
 'use strict'
 
 const reekoh = require('reekoh')
-const _plugin = new reekoh.plugins.Storage()
+const plugin = new reekoh.plugins.Storage()
 
 const async = require('async')
 const moment = require('moment')
@@ -117,16 +117,16 @@ let processData = (data, callback) => {
   })
 }
 
-_plugin.on('data', (data) => {
+plugin.on('data', (data) => {
   if (isPlainObject(data)) {
     processData(data, (error, processedData) => {
-      if (error) return _plugin.logException(error)
+      if (error) return plugin.logException(error)
 
       insertData(processedData, (error) => {
-        if (error) return _plugin.logException(error)
+        if (error) return plugin.logException(error)
 
-        process.send({ type: 'processed' })
-        _plugin.log(JSON.stringify({
+        plugin.emit('processed')
+        plugin.log(JSON.stringify({
           title: 'Record Successfully inserted to Oracle Database.',
           data: data
         }))
@@ -135,13 +135,13 @@ _plugin.on('data', (data) => {
   } else if (Array.isArray(data)) {
     async.each(data, (datum) => {
       processData(datum, (error, processedData) => {
-        if (error) return _plugin.logException(error)
+        if (error) return plugin.logException(error)
 
         insertData(processedData, (error) => {
-          if (error) return _plugin.logException(error)
+          if (error) return plugin.logException(error)
 
-          process.send({ type: 'processed' })
-          _plugin.log(JSON.stringify({
+          plugin.emit('processed')
+          plugin.log(JSON.stringify({
             title: 'Record Successfully inserted to Oracle Database.',
             data: datum
           }))
@@ -149,12 +149,12 @@ _plugin.on('data', (data) => {
       })
     })
   } else {
-    _plugin.logException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`))
+    plugin.logException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`))
   }
 })
 
-_plugin.once('ready', () => {
-  _plugin.config.field_mapping = JSON.stringify({
+plugin.once('ready', () => {
+  plugin.config.field_mapping = JSON.stringify({
     ID: {source_field: 'id', data_type: 'Integer'},
     CO2_FIELD: {source_field: 'co2', data_type: 'String'},
     TEMP_FIELD: {source_field: 'temp', data_type: 'Integer'},
@@ -168,7 +168,7 @@ _plugin.once('ready', () => {
     IS_NORMAL_FIELD: {source_field: 'is_normal', data_type: 'Boolean'}
   })
 
-  let options = _plugin.config
+  let options = plugin.config
 
   tableName = options.schema
     ? `"${options.schema}"."${options.table}"`
@@ -183,7 +183,7 @@ _plugin.once('ready', () => {
     }
   ], (parseError) => {
     if (parseError) {
-      _plugin.logException(new Error('Invalid field mapping. Must be a valid JSON String.'))
+      plugin.logException(new Error('Invalid field mapping. Must be a valid JSON String.'))
 
       return setTimeout(() => {
         process.exit(1)
@@ -206,7 +206,7 @@ _plugin.once('ready', () => {
     }, (fieldMapError) => {
       if (fieldMapError) {
         console.error('Error parsing field mapping.', fieldMapError)
-        _plugin.logException(fieldMapError)
+        plugin.logException(fieldMapError)
 
         return setTimeout(() => {
           process.exit(1)
@@ -220,7 +220,7 @@ _plugin.once('ready', () => {
       }, (connectionError, connectionPool) => {
         if (connectionError) {
           console.error('Error connecting to Oracle Database Server.', connectionError)
-          _plugin.logException(connectionError)
+          plugin.logException(connectionError)
 
           return setTimeout(() => {
             process.exit(1)
@@ -229,9 +229,12 @@ _plugin.once('ready', () => {
 
         pool = connectionPool
 
-        _plugin.log('Connected to Oracle Database Server.')
-        process.send({ type: 'ready' })
+        plugin.log('Connected to Oracle Database Server.')
+        plugin.emit('init')
       })
     })
   })
 })
+
+module.exports = plugin
+
