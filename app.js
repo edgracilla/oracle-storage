@@ -85,7 +85,11 @@ let processData = (data, callback) => {
           } else if ((isString(datum) && datum.toLowerCase() === 'false') || (isNumber(datum) && datum === 0)) {
             processedDatum = 0
           } else {
-            processedDatum = (datum) ? 1 : 0
+            if (datum) {
+              processedDatum = 1
+            } else {
+              processedDatum = 0
+            }
           }
         } else if (field.data_type === 'Date' || field.data_type === 'Timestamp') {
           if (isEmpty(field.format) && moment(datum).isValid()) {
@@ -170,9 +174,11 @@ plugin.once('ready', () => {
 
   let options = plugin.config
 
-  tableName = options.schema
-    ? `"${options.schema}"."${options.table}"`
-    : `"${options.table}"`
+  if (options.schema) {
+    tableName = `"${options.schema}"."${options.table}"`
+  } else {
+    tableName = `"${options.table}"`
+  }
 
   async.waterfall([
     async.constant(options.field_mapping || '{}'),
